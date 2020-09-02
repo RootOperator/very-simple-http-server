@@ -30,11 +30,9 @@ impl<'key, 'value> Server<'key, 'value> {
 
             for route in &self.routes {
                 let search = format!("GET {} HTTP/1.1", route.0);
-                println!("{}", search);
 
                 if buffer.starts_with(search.as_bytes()) {
-                    contents = fs::read_to_string("index.html").unwrap();
-                    println!("YEP");
+                    contents = fs::read_to_string(route.1.0).unwrap();
                     break;
                 } else {
                     contents = String::from("html");
