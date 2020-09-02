@@ -38,9 +38,9 @@ impl<'key, 'value> Server<'key, 'value> {
                 let search = format!("GET {} HTTP/1.1", route.0);
 
                 if buffer.starts_with(search.as_bytes()) {
-                    contents = fs::read_to_string(route.1.0).unwrap();
+                    contents = fs::read_to_string((route.1).0).unwrap();
                     status_line = "HTTP/1.1 200 OK\r\n\r\n";
-                    route.1.1();
+                    (route.1).1();
                     break;
                 } else {
                     contents = load_404();
