@@ -17,12 +17,18 @@ impl<'key, 'value> Server<'key, 'value> {
         return Server { listener, routes }
     }
 
-    pub fn add(&mut self, route: &'key str, filename: &'key str, function: &'value dyn Fn()) {
+    pub fn fn_add(&mut self, route: &'key str, filename: &'key str, function: &'value dyn Fn()) {
         self.routes.insert(route, (filename, function));
+    }
+    
+
+    pub fn add(&mut self, route: &'key str, filename: &'key str) {
+        self.routes.insert(route, (filename, &nothing));
     }
 
     pub fn run(&mut self) {
         let mut contents: String = String::from("");
+        let mut status_line: &str = "HTTP/1.1 418 I'm a teapot";
         for stream in self.listener.incoming() {
             let mut stream = stream.unwrap();
             let mut buffer = [0;1024];
@@ -33,14 +39,15 @@ impl<'key, 'value> Server<'key, 'value> {
 
                 if buffer.starts_with(search.as_bytes()) {
                     contents = fs::read_to_string(route.1.0).unwrap();
+                    status_line = "HTTP/1.1 200 OK\r\n\r\n";
+                    route.1.1();
                     break;
                 } else {
-                    contents = String::from("html");
+                    contents = load_404();
+                    status_line = "HTTP/1.1 404 Not Found\r\n\r\n";
                 }
             }
 
-            let status_line = "HTTP/1.1 200 OK\r\n\r\n";
-            //let contents = fs::read_to_string("index.html").unwrap();
             let response = format!("{}{}", status_line, contents);
             
 
@@ -48,5 +55,28 @@ impl<'key, 'value> Server<'key, 'value> {
             stream.flush().unwrap();
         }
     }
+}
+fn nothing() {}
+
+fn load_404() -> String {
+    let html = "\
+        <!DOCTYPE html>
+            <html>
+                <body>
+                    <h1>404</h1>
+                    <h3>Page not found</h3>
+                </body>
+            <style>
+            body {
+                font-family: Courier new;
+                max-width: 500px;
+                padding-top: 20%;
+                text-align: center;
+                margin: auto;
+            }
+            </style>
+            </html>
+        ";
+    return String::from(html);
 }
 
