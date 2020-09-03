@@ -1,4 +1,5 @@
 use std::io::prelude::*;
+use std::path::Path;
 use std::net::TcpListener;
 use std::fs;
 use std::collections::HashMap;
@@ -56,8 +57,44 @@ impl<'key, 'value> Server<'key, 'value> {
         }
     }
 }
-fn nothing() {}
 
+pub struct Cmd {
+    pub host: String,
+    pub port: i16,
+    pub path: String 
+}
+
+
+impl Cmd {
+    pub fn new(args: &[String]) -> Result<Cmd, &'static str> {
+        if args.len() < 3 {
+            return Err("Not Enough arguments");
+        }
+    
+        let host = args[1].clone();
+        let port = args[2].clone().parse::<i16>().unwrap();
+        //let port = Port.parse<i16>.unwrap();
+        let path = args[3].clone();
+        
+        return Ok(Cmd { host, port, path })
+    }
+
+    pub fn run(cmd: Cmd) {
+        let mut server = Server::connect(&cmd.host, cmd.port);
+        if is_file(&cmd.path) {
+            server.add("/", &cmd.path);
+            server.run();
+        } else {
+            // server.runFileServer
+        }
+    }
+}
+
+fn is_file(query: &str) -> bool {
+    return Path::new(&query).exists();
+}
+
+fn nothing() {}
 fn load_404() -> String {
     let html = "\
         <!DOCTYPE html>
