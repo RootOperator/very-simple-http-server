@@ -5,7 +5,7 @@ use std::fs;
 use std::collections::HashMap;
 
 // TODO 
-// make is_file actually check if it is a file and not just of the path exists
+// make is_file actually check if it is a file and not just if the path exists
 // create tests
 // write simple file server if a path is suppliad as an argument instead of a file
 
