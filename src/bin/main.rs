@@ -10,6 +10,9 @@ fn main() {
         process::exit(1);
     });
 
-    Cmd::run(cmd);
+    Cmd::run(cmd).unwrap_or_else(|err| {
+        eprintln!("Problem running the program: {}", err);
+        process::exit(1);
+    });
 }
 

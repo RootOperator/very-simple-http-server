@@ -5,8 +5,6 @@ use std::fs;
 use std::collections::HashMap;
 
 // TODO 
-// make is_file actually check if it is a file and not just of the path exists
-// create tests
 // write simple file server if a path is suppliad as an argument instead of a file
 
 
@@ -73,30 +71,37 @@ pub struct Cmd {
 impl Cmd {
     pub fn new(args: &[String]) -> Result<Cmd, &'static str> {
         if args.len() < 3 {
-            return Err("Not Enough arguments");
+            return Err("Not enough arguments");
         }
     
         let host = args[1].clone();
         let port = args[2].clone().parse::<i16>().unwrap();
-        //let port = Port.parse<i16>.unwrap();
         let path = args[3].clone();
         
         return Ok(Cmd { host, port, path })
     }
 
-    pub fn run(cmd: Cmd) {
+    pub fn run(cmd: Cmd) -> Result<(), &'static str> {
         let mut server = Server::connect(&cmd.host, cmd.port);
         if is_file(&cmd.path) {
             server.add("/", &cmd.path);
             server.run();
-        } else {
+        } else if is_dir(&cmd.path){
             // server.runFileServer
+        } else {
+            return Err("File or directory not found");
         }
+
+        return Ok(());
     }
 }
 
-fn is_file(query: &str) -> bool {
-    return Path::new(&query).exists();
+pub fn is_dir(query: &str) -> bool {
+    return Path::new(&query).is_dir(); 
+}
+
+pub fn is_file(query: &str) -> bool {
+    return Path::new(&query).is_file();
 }
 
 fn nothing() {}
