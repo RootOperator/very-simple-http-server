@@ -5,19 +5,8 @@ use std::env;
 use std::process;
 
 fn main() {
-    //let mut s = Server::new();
-
-
-    //let args: Vec<String> = env::args().collect();
-
-    //let cmd = Cmd::new(&args).unwrap_or_else(|err| {
-        //eprintln!("Problem parsing arguments: {}", err);
-        //process::exit(1);
-    //});
-
-    //Cmd::run(cmd).unwrap_or_else(|err| {
-        //eprintln!("Problem running the program: {}", err);
-        //process::exit(1);
-    //});
+    let mut server = Server::connect("127.0.0.1", 8000);
+    server.add("/test", "index.html");
+    server.run();
 }
 

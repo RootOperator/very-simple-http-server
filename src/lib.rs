@@ -21,7 +21,7 @@ impl Server {
         return Server { listener, routes }
     }
 
-    pub fn add(mut self, route: &str, filename: &str) {
+    pub fn add(&mut self, route: &str, filename: &str) {
         self.routes.insert(String::from(route), String::from(filename));
     }
 
