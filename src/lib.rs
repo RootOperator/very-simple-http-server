@@ -1,7 +1,6 @@
 #![allow(dead_code, unused_imports, unused_assignments, unused_variables)]
 
 use std::io::prelude::*;
-use std::path::Path;
 use std::net::TcpListener;
 use std::fs;
 use std::collections::HashMap;
