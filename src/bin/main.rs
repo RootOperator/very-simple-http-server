@@ -37,24 +37,23 @@ fn main() {
 }
 
 fn logic(mut server: &mut Server, path: &Path, query: &str) {
-        if path.is_file() {
-            server.add("/", &query);
-        } else {
-            let dir_items = path.read_dir().unwrap();
+    if path.is_file() {
+        server.add("/", &query);
+    } else {
+        let dir_items = path.read_dir().unwrap();
 
-            for i in dir_items {
-                let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
-                let format = format!("/{}", &item);
-                let new_path = Path::new(&item);
+        for i in dir_items {
+            let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
+            let format = format!("/{}", &item);
+            let new_path = Path::new(&item);
 
-                if new_path.is_dir() {
-                    logic(&mut server, &new_path, &query);
-                    break;
-                }
-                
-
+            if new_path.is_dir() {
+                logic(&mut server, &new_path, &query);
+            } else {
                 server.add(&format, &item);
             }
+
         }
+    }
 }
 
