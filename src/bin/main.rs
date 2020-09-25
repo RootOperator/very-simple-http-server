@@ -25,20 +25,25 @@ fn main() {
     };
     
     let mut server = Server::connect(&host, port);
-
+    
 
     if path.exists() {
         if path.is_file() {
             server.add("/", &query);
-            server.run();
-        } else {         
+        } else {
             let dir_items = path.read_dir().unwrap();
 
             for i in dir_items {
-                println!("{:?}", i.unwrap().path());
+                let format = format!("/{}", i.as_ref().unwrap().path().to_str().unwrap());
+
+                server.add(&format,
+                    i.as_ref().unwrap().path().to_str().unwrap());
             }
         }
+        println!("{:#?}", server.routes);
+        server.run();
+    } else {
+        eprintln!("File or directory not found");
     }
-
 }
 

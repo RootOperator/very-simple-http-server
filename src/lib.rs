@@ -8,7 +8,7 @@ use std::collections::HashMap;
 
 pub struct Server {
     listener: TcpListener,
-    routes: HashMap<String, String>
+    pub routes: HashMap<String, String>
 }
 
 
@@ -40,7 +40,7 @@ impl Server {
                     status_line = "HTTP/1.1 200 OK\r\n\r\n";
                     break;
                 } else {
-                    contents = String::from("404");
+                    contents = load_404();
                     status_line = "HTTP/1.1 404 Not Found\r\n\r\n";
                 }
             }
@@ -53,3 +53,24 @@ impl Server {
     }
 }
 
+fn load_404() -> String {
+    let html = "\
+        <!DOCTYPE html>
+            <html>
+                <body>
+                    <h1>404</h1>
+                    <h3>Page not found</h3>
+                </body>
+            <style>
+            body {
+                font-family: Courier new;
+                max-width: 500px;
+                padding-top: 20%;
+                text-align: center;
+                margin: auto;
+            }
+            </style>
+            </html>
+        ";
+    return String::from(html);
+}
