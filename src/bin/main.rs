@@ -16,7 +16,6 @@ fn main() {
     let host: String;
     let port: i16;
     let query: String = args[1].clone();
-    let path = Path::new(&query);
 
     let (host, port) = if args.len() == 2 {
         (String::from("127.0.0.1"), 8000)
@@ -25,25 +24,37 @@ fn main() {
     };
     
     let mut server = Server::connect(&host, port);
+    let path = Path::new(&query);
     
 
     if path.exists() {
+        logic(&mut server, &path, &query);
+        println!("{:#?}", server.routes);
+        server.run();
+    } else {
+        eprintln!("File or directory not found");
+    }
+}
+
+fn logic(mut server: &mut Server, path: &Path, query: &str) {
         if path.is_file() {
             server.add("/", &query);
         } else {
             let dir_items = path.read_dir().unwrap();
 
             for i in dir_items {
-                let format = format!("/{}", i.as_ref().unwrap().path().to_str().unwrap());
+                let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
+                let format = format!("/{}", &item);
+                let new_path = Path::new(&item);
 
-                server.add(&format,
-                    i.as_ref().unwrap().path().to_str().unwrap());
+                if new_path.is_dir() {
+                    logic(&mut server, &new_path, &query);
+                    break;
+                }
+                
+
+                server.add(&format, &item);
             }
         }
-        println!("{:#?}", server.routes);
-        server.run();
-    } else {
-        eprintln!("File or directory not found");
-    }
 }
 
