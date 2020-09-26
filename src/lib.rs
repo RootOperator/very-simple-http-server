@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::fs;
+use std::path::Path;
 use std::collections::HashMap;
 
 
@@ -47,6 +48,25 @@ impl Server {
 
             stream.write(response.as_bytes()).unwrap();
             stream.flush().unwrap();
+        }
+    }
+    pub fn logic(&mut self, path: &Path, query: &str) {
+        if path.is_file() {
+            &self.add("/", &query);
+        } else {
+            let dir_items = path.read_dir().unwrap();
+    
+            for i in dir_items {
+                let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
+                let format = format!("/{}", &item);
+                let new_path = Path::new(&item);
+    
+                if new_path.is_dir() {
+                    &self.logic(&new_path, &query);
+                } else {
+                    &self.add(&format, &item);
+                }
+            }
         }
     }
 }
