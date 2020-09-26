@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_imports, unused_variables, unused_mut)]
-
 use simple_http::Server;
 use std::env;
 use std::process;
@@ -13,8 +11,6 @@ fn main() {
         process::exit(1);
     }
     
-    let host: String;
-    let port: i16;
     let query: String = args[1].clone();
 
     let (host, port) = if args.len() == 2 {
@@ -52,7 +48,6 @@ fn logic(mut server: &mut Server, path: &Path, query: &str) {
             } else {
                 server.add(&format, &item);
             }
-
         }
     }
 }
