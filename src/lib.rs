@@ -1,3 +1,4 @@
+use std::thread;
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::fs;
@@ -87,8 +88,20 @@ impl Server {
 }
 
 fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
-    let mut html = String::from("");
+    let mut html = String::from("<!DOCTYPE html><html><body>");
+    let url = if dir.contains("/") {
+        let split: Vec<&str> = dir.split("/").collect();
+        let index = split.len() - 2;
+        if index == 0 {
+            "/".to_string()
+        } else {
+            format!("/{}", split[index])
+        }
+    } else { "/".to_string() };
     
+    let parent_dir = format!("<a href='{}'>../</a><br>", url);
+    html.push_str(&parent_dir);
+
     for route in routes {
         let parent = Path::new(route.1).parent().unwrap();
         if route.1.starts_with(&dir) && parent == Path::new(&dir) {
@@ -96,6 +109,13 @@ fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
             html.push_str(&link);
         }
     }
+
+    html.push_str("</body><style>body {
+                font-family: Courier new;
+                max-width: 200px;
+                padding-top: 12%;
+                text-align: left;
+                margin: auto;}</style></html>");
 
     return html;
 }
