@@ -30,5 +30,3 @@ fn main() {
         eprintln!("File or directory not found");
     }
 }
-
-

@@ -35,8 +35,14 @@ impl Server {
                 let search = format!("GET {} HTTP/1.1", route.0);
 
                 if buffer.starts_with(search.as_bytes()) {
-                    contents = fs::read_to_string(route.1).unwrap();
-                    status_line = "HTTP/1.1 200 OK\r\n\r\n";
+                    let path = Path::new(route.1);
+
+                    if path.is_file(){
+                        contents = fs::read_to_string(route.1).unwrap();
+                        status_line = "HTTP/1.1 200 OK\r\n\r\n";
+                    } else { 
+                        contents = create_dir_html(route.1.to_string(), &self.routes);
+                    }
                     break;
                 } else {
                     contents = load_404();
@@ -50,25 +56,43 @@ impl Server {
             stream.flush().unwrap();
         }
     }
+
     pub fn logic(&mut self, path: &Path, query: &str) {
-        if path.is_file() {
-            &self.add("/", &query);
-        } else {
+        &self.add("/", &query);
+
+        if path.is_dir() {
             let dir_items = path.read_dir().unwrap();
     
             for i in dir_items {
                 let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
-                let format = format!("/{}", &item);
+                let mut format = format!("/{}", &item);
                 let new_path = Path::new(&item);
     
+                let range = format.find(&query).unwrap() + &query.len();
+                format.replace_range(..range, "");
+
                 if new_path.is_dir() {
                     &self.logic(&new_path, &query);
-                } else {
-                    &self.add(&format, &item);
                 }
+                
+                &self.add(&format, &item);
             }
         }
     }
+}
+
+fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
+    let mut html = String::from("");
+    
+    for route in routes {
+        let parent = Path::new(route.1).parent().unwrap();
+        if route.1.starts_with(&dir) && parent == Path::new(&dir) {
+            let link = format!("<a href='{url}'>{url}</a><br>", url=route.0); 
+            html.push_str(&link);
+        }
+    }
+
+    return html;
 }
 
 fn load_404() -> String {
