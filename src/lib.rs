@@ -65,10 +65,15 @@ impl Server {
     
             for i in dir_items {
                 let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
-                let mut format = format!("/{}", &item);
+                let mut format = String::from(&item);
                 let new_path = Path::new(&item);
     
-                let range = format.find(&query).unwrap() + &query.len();
+                let range = if query.ends_with("/"){
+                    format.find(&query).unwrap() + &query.len() - 1
+                } else {
+                    format.find(&query).unwrap() + &query.len()
+                }; 
+
                 format.replace_range(..range, "");
 
                 if new_path.is_dir() {
