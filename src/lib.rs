@@ -1,4 +1,3 @@
-use std::thread;
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::fs;
