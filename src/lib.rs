@@ -95,7 +95,13 @@ fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
         if index == 0 {
             "/".to_string()
         } else {
-            format!("/{}", split[index])
+            let mut previous_dir: String = String::from("");
+
+            for n in 1..=index {
+                let dir_name = format!("/{}", split[n]);
+                previous_dir.push_str(&dir_name);
+            }
+            previous_dir
         }
     } else { "/".to_string() };
     
@@ -111,11 +117,11 @@ fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
     }
 
     html.push_str("</body><style>body {
-                font-family: Courier new;
-                max-width: 200px;
-                padding-top: 12%;
-                text-align: left;
-                margin: auto;}</style></html>");
+                    font-family: Courier new;
+                    display: inline-block;
+                    position: absolute;
+                    left: 40%; 
+                    top: 12%;}</style></body></html>");
 
     return html;
 }
