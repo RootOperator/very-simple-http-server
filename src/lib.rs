@@ -1,50 +1,48 @@
 use std::io::prelude::*;
-use std::path::Path;
 use std::net::TcpListener;
 use std::fs;
+use std::path::Path;
 use std::collections::HashMap;
 
-// TODO 
-// write simple file server if a path is suppliad as an argument instead of a file
 
-
-pub struct Server<'key, 'value> {
-   listener: TcpListener,
-   pub routes: HashMap<&'key str, (&'key str, &'value dyn Fn())>
+pub struct Server {
+    listener: TcpListener,
+    pub routes: HashMap<String, String>
 }
 
-impl<'key, 'value> Server<'key, 'value> {
+
+impl Server {
     pub fn connect(host: &str, port: i16) -> Server {
-        let bind = format!("{}:{}", host, port);
+        let bind =  format!("{}:{}", host, port);
         let listener = TcpListener::bind(bind).unwrap();
         let routes = HashMap::new();
         return Server { listener, routes }
     }
 
-    pub fn fn_add(&mut self, route: &'key str, filename: &'key str, function: &'value dyn Fn()) {
-        self.routes.insert(route, (filename, function));
-    }
-    
-
-    pub fn add(&mut self, route: &'key str, filename: &'key str) {
-        self.routes.insert(route, (filename, &nothing));
+    pub fn add(&mut self, route: &str, filename: &str) {
+        self.routes.insert(String::from(route), String::from(filename));
     }
 
-    pub fn run(&mut self) {
+    pub fn run(self) {
         let mut contents: String = String::from("");
         let mut status_line: &str = "HTTP/1.1 418 I'm a teapot";
         for stream in self.listener.incoming() {
             let mut stream = stream.unwrap();
-            let mut buffer = [0;1024];
+            let mut buffer = [0; 1024];
             stream.read(&mut buffer).unwrap();
 
             for route in &self.routes {
                 let search = format!("GET {} HTTP/1.1", route.0);
 
                 if buffer.starts_with(search.as_bytes()) {
-                    contents = fs::read_to_string((route.1).0).unwrap();
-                    status_line = "HTTP/1.1 200 OK\r\n\r\n";
-                    (route.1).1();
+                    let path = Path::new(route.1);
+
+                    if path.is_file(){
+                        contents = fs::read_to_string(route.1).unwrap();
+                        status_line = "HTTP/1.1 200 OK\r\n\r\n";
+                    } else { 
+                        contents = create_dir_html(route.1.to_string(), &self.routes);
+                    }
                     break;
                 } else {
                     contents = load_404();
@@ -53,58 +51,80 @@ impl<'key, 'value> Server<'key, 'value> {
             }
 
             let response = format!("{}{}", status_line, contents);
-            
 
             stream.write(response.as_bytes()).unwrap();
             stream.flush().unwrap();
         }
     }
-}
 
-pub struct Cmd {
-    pub host: String,
-    pub port: i16,
-    pub path: String 
-}
+    pub fn logic(&mut self, path: &Path, query: &str) {
+        &self.add("/", &query);
 
-
-impl Cmd {
-    pub fn new(args: &[String]) -> Result<Cmd, &'static str> {
-        if args.len() < 3 {
-            return Err("Not enough arguments");
-        }
+        if path.is_dir() {
+            let dir_items = path.read_dir().unwrap();
     
-        let host = args[1].clone();
-        let port = args[2].clone().parse::<i16>().unwrap();
-        let path = args[3].clone();
-        
-        return Ok(Cmd { host, port, path })
-    }
+            for i in dir_items {
+                let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
+                let mut format = String::from(&item);
+                let new_path = Path::new(&item);
+    
+                let range = if query.ends_with("/"){
+                    format.find(&query).unwrap() + &query.len() - 1
+                } else {
+                    format.find(&query).unwrap() + &query.len()
+                }; 
 
-    pub fn run(cmd: Cmd) -> Result<(), &'static str> {
-        let mut server = Server::connect(&cmd.host, cmd.port);
-        if is_file(&cmd.path) {
-            server.add("/", &cmd.path);
-            server.run();
-        } else if is_dir(&cmd.path){
-            // server.runFileServer
-        } else {
-            return Err("File or directory not found");
+                format.replace_range(..range, "");
+
+                if new_path.is_dir() {
+                    &self.logic(&new_path, &query);
+                }
+                
+                &self.add(&format, &item);
+            }
         }
-
-        return Ok(());
     }
 }
 
-pub fn is_dir(query: &str) -> bool {
-    return Path::new(&query).is_dir(); 
+fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
+    let mut html = String::from("<!DOCTYPE html><html><body>");
+    let url = if dir.contains("/") {
+        let split: Vec<&str> = dir.split("/").collect();
+        let index = split.len() - 2;
+        if index == 0 {
+            "/".to_string()
+        } else {
+            let mut previous_dir: String = String::from("");
+
+            for n in 1..=index {
+                let dir_name = format!("/{}", split[n]);
+                previous_dir.push_str(&dir_name);
+            }
+            previous_dir
+        }
+    } else { "/".to_string() };
+    
+    let parent_dir = format!("<a href='{}'>../</a><br>", url);
+    html.push_str(&parent_dir);
+
+    for route in routes {
+        let parent = Path::new(route.1).parent().unwrap();
+        if route.1.starts_with(&dir) && parent == Path::new(&dir) {
+            let link = format!("<a href='{url}'>{url}</a><br>", url=route.0); 
+            html.push_str(&link);
+        }
+    }
+
+    html.push_str("</body><style>body {
+                    font-family: Courier new;
+                    display: inline-block;
+                    position: absolute;
+                    left: 40%; 
+                    top: 12%;}</style></body></html>");
+
+    return html;
 }
 
-pub fn is_file(query: &str) -> bool {
-    return Path::new(&query).is_file();
-}
-
-fn nothing() {}
 fn load_404() -> String {
     let html = "\
         <!DOCTYPE html>
@@ -126,4 +146,3 @@ fn load_404() -> String {
         ";
     return String::from(html);
 }
-
