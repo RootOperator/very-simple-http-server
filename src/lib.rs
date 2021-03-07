@@ -1,5 +1,5 @@
 use std::io::prelude::*;
-use std::net::TcpListener;
+use std::net::{TcpListener, IpAddr, TcpStream, SocketAddr};
 use std::fs;
 use std::path::Path;
 use std::collections::HashMap;
@@ -13,10 +13,11 @@ pub struct Server {
 
 impl Server {
     pub fn connect(host: &str, port: i16) -> Server {
-        let bind =  format!("{}:{}", host, port);
-        let listener = TcpListener::bind(bind).unwrap();
+        let bind = format!("{}:{}", host, port);
+        let listener = TcpListener::bind(&bind).unwrap();
+        println!("Now listening on {}", &bind);
         let routes = HashMap::new();
-        return Server { listener, routes }
+        return Server { listener, routes };
     }
 
     pub fn add(&mut self, route: &str, filename: &str) {
@@ -27,9 +28,15 @@ impl Server {
         let mut contents: String = String::from("");
         let mut status_line: &str = "HTTP/1.1 418 I'm a teapot";
         for stream in self.listener.incoming() {
-            let mut stream = stream.unwrap();
+            let mut stream: TcpStream = stream.unwrap();
+            let peer_addr: SocketAddr = stream.peer_addr().unwrap();
+            let peer_ip: IpAddr = peer_addr.ip();
             let mut buffer = [0; 1024];
             stream.read(&mut buffer).unwrap();
+
+            let s = format!("{}", String::from_utf8_lossy(&buffer[..]));
+            let o = s.trim_end_matches("\u{0}");
+            println!("{}", o);
 
             for route in &self.routes {
                 let search = format!("GET {} HTTP/1.1", route.0);
@@ -37,10 +44,10 @@ impl Server {
                 if buffer.starts_with(search.as_bytes()) {
                     let path = Path::new(route.1);
 
-                    if path.is_file(){
+                    if path.is_file() {
                         contents = fs::read_to_string(route.1).unwrap();
                         status_line = "HTTP/1.1 200 OK\r\n\r\n";
-                    } else { 
+                    } else {
                         contents = create_dir_html(route.1.to_string(), &self.routes);
                     }
                     break;
@@ -62,31 +69,31 @@ impl Server {
 
         if path.is_dir() {
             let dir_items = path.read_dir().unwrap();
-    
+
             for i in dir_items {
                 let item = format!("{}", i.as_ref().unwrap().path().to_str().unwrap());
                 let mut format = String::from(&item);
                 let new_path = Path::new(&item);
-    
-                let range = if query.ends_with("/"){
+
+                let range = if query.ends_with("/") {
                     format.find(&query).unwrap() + &query.len() - 1
                 } else {
                     format.find(&query).unwrap() + &query.len()
-                }; 
+                };
 
                 format.replace_range(..range, "");
 
                 if new_path.is_dir() {
                     &self.logic(&new_path, &query);
                 }
-                
+
                 &self.add(&format, &item);
             }
         }
     }
 }
 
-fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
+pub fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
     let mut html = String::from("<!DOCTYPE html><html><body>");
     let url = if dir.contains("/") {
         let split: Vec<&str> = dir.split("/").collect();
@@ -103,14 +110,16 @@ fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
             previous_dir
         }
     } else { "/".to_string() };
-    
+
     let parent_dir = format!("<a href='{}'>../</a><br>", url);
     html.push_str(&parent_dir);
 
     for route in routes {
         let parent = Path::new(route.1).parent().unwrap();
         if route.1.starts_with(&dir) && parent == Path::new(&dir) {
-            let link = format!("<a href='{url}'>{url}</a><br>", url=route.0); 
+            let mut link: String = String::from(route.0);
+            if Path::new(route.1).is_dir() { link.push_str("/") }
+            link = format!("<a href='{url}'>{link}</a><br>", url=route.0, link=link);
             html.push_str(&link);
         }
     }
@@ -119,8 +128,13 @@ fn create_dir_html(dir: String, routes: &HashMap<String, String>) -> String {
                     font-family: Courier new;
                     display: inline-block;
                     position: absolute;
+                    background-color: #0f1419;
                     left: 40%; 
-                    top: 12%;}</style></body></html>");
+                    top: 12%;}
+                    a, a:hover, a:visited, a:active {
+                    color: #b9b9ba;
+                    text-decoration: none;
+                    }</style></body></html>");
 
     return html;
 }
