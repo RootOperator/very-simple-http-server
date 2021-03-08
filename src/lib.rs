@@ -25,8 +25,8 @@ impl Server {
     }
 
     pub fn run(self) {
-        let mut contents: String = String::from("");
-        let mut status_line: &str = "HTTP/1.1 418 I'm a teapot";
+        let mut contents: String = String::new();
+        let mut status_line: &str = "HTTP/1.1 200 OK\r\n\r\n";
         for stream in self.listener.incoming() {
             let mut stream: TcpStream = stream.unwrap();
             let peer_addr: SocketAddr = stream.peer_addr().unwrap();
