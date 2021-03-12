@@ -1,4 +1,4 @@
-use simple_http::Server;
+use SimpleHTTP::Server;
 use std::env;
 use std::process;
 use std::path::Path;

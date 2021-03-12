@@ -1,5 +1,5 @@
 [package]
-name = "simple_http"
+name = "SimpleHTTP"
 version = "0.1.0"
 authors = ["RootOperator <20143055+RootOperator@users.noreply.github.com>"]
 edition = "2018"
